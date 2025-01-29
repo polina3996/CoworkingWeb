@@ -1,8 +1,12 @@
 package coworking.repository;
 
+import coworking.databases.HQLQueries;
+import coworking.model.Reservation;
+import coworking.model.Workspace;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 
 public abstract class Repository<T> {
     private final SessionFactory sessionFactory;;
@@ -51,5 +55,6 @@ public abstract class Repository<T> {
             throw new RuntimeException("Failed to save entity", e);
         }
     }
+
 }
 

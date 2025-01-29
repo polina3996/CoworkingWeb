@@ -10,226 +10,183 @@ import coworking.repository.WorkspaceRepository;
 import coworking.service.ReservationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-
-import java.util.ArrayList;
-import java.util.InputMismatchException;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
-import java.util.Scanner;
 
 /**
  * Manages spaces and view all bookings
  * Add, remove or update coworking spaces
  */
 
+
 @Controller
+@RequestMapping("/admin")
 public class AdminController {
-    private final Scanner scanner;
     private final WorkspaceRepository workspaceRepository;
     private final ReservationRepository reservationRepository;
     private final ReservationService reservationService;
     private final UserRepository userRepository;
 
+
     @Autowired
-    public AdminController(Scanner scanner, WorkspaceRepository workspaceRepository, ReservationRepository reservationRepository, ReservationService reservationService, UserRepository userRepository) {
-         this.scanner = scanner;
-         this.workspaceRepository = workspaceRepository;
-         this.reservationRepository = reservationRepository;
-         this.reservationService = reservationService;
-         this.userRepository = userRepository;
+    public AdminController(WorkspaceRepository workspaceRepository, ReservationRepository reservationRepository, ReservationService reservationService, UserRepository userRepository) {
+        this.workspaceRepository = workspaceRepository;
+        this.reservationRepository = reservationRepository;
+        this.reservationService = reservationService;
+        this.userRepository = userRepository;
     }
 
-    public void addCoworkingSpace() {
-        System.out.println("Type in the new coworking space data: ");
-        System.out.println("type of coworking(1 word) - ");
-        String type = this.scanner.next();
-        System.out.println("price in $(number) - ");
-        double price;
 
-        while (true) {
-            try{
-                price = this.scanner.nextDouble();
-            }
-            catch (InputMismatchException e) {
-                System.out.println("It's not a number!");
-                this.scanner.nextLine();
-                continue;
-            }
-            break; // price is number -> no exception -> stops asking for price and accepts last one
-        }
+    @GetMapping("/addWorkspace")
+    //When the GET request to /addWorkspace is made, the controller sends an empty Workspace object to the view.
+    //The JSP renders a form based on this empty object.
+    public String showAddWorkspaceForm(Model model) {
+        // model - Represents the Model interface provided by Spring MVC.
+        // It acts as a container to store data that the controller sends to the view.
+        model.addAttribute("workspace", new Workspace());//A method to add key-value
+        // pairs to the model. The key is the name used in the view (e.g., JSP),
+        // and the value is the actual object you want to pass.
 
-        Workspace newWorkspace = new Workspace(type, price);
-        this.workspaceRepository.save(newWorkspace);
-        System.out.println("New coworking space added successfully!");
+        //"workspace" - This is the key (or name) by which the data is referenced in the view (JSP).
+        //In the JSP, you can access this object using ${workspace} (e.g., in JSTL or form elements).
+        //<form action="addWorkspace" method="post">
+        //    <input type="text" name="type" value="${workspace.type}">
+        //</form>
+
+        //new Workspace() - This is the value (or the actual object) being passed.
+        //A new, empty instance of the Workspace class is created and added to the model.
+        //This object will be used in the JSP as a backing object for a form, meaning it will hold the user’s input data.
+        return "addWorkspace";
     }
 
-    public List<Workspace> browseCoworkingSpaces(){
+    @PostMapping("/addWorkspace")
+    //When the user fills out the form and submits it, Spring automatically binds the form data
+    // to the Workspace object using its property names (e.g., type and price).
+    public String addWorkspace(@ModelAttribute("workspace") Workspace workspace, Model model) {
         try {
-            List<Workspace> workspaces = this.workspaceRepository.findAll();
-            CheckMethods.checkEmptiness(workspaces, "coworking spaces");
-            System.out.println("Here are all coworking spaces :");
-            for (Workspace item : workspaces) {
-                System.out.println(item);
-            }
-            return workspaces;
+            this.workspaceRepository.save(workspace);
+            model.addAttribute("message", "Workspace added successfully!");
+        } catch (Exception e) {
+            model.addAttribute("message", "Error adding workspace: " + e.getMessage());
         }
-        catch (CheckEmptinessException e) {
-            System.out.println(e.getMessage());
-            return new ArrayList<>();
-        }
-
-    }
-
-    public void removeCoworkingSpace() {
-        List<Workspace> workspaces = browseCoworkingSpaces();
-        if (workspaces.isEmpty()){
-            return;
-        }
-
-        System.out.println("Type in the id of coworking space you want to remove: ");
-        System.out.println("id(number) - ");
-        Workspace workspacesRemoved = null;
-        int id;
-
-        while (true) {
-            try {
-                id = this.scanner.nextInt();
-                for (Workspace workspace: workspaces){
-                    if (workspace.getId() == id){
-                        workspacesRemoved = workspace;
-                        break;
-                    }
-                }
-                if (workspacesRemoved == null){
-                    System.out.println("No such coworking space. Please enter another one: ");
-                    continue;
-                }
-            }
-            catch (NullPointerException e) {
-                System.out.println("No such coworking space. Please enter another one: ");
-                this.scanner.nextLine();
-                continue;
-            }
-            catch (InputMismatchException e) {
-                System.out.println("This is not a number!");
-                this.scanner.nextLine();
-                continue;
-            }
-            break; // coworking exists and id is a number-> no exception -> stops asking for id and accepts last one
-        }
-
-        this.workspaceRepository.delete(workspacesRemoved);
-        System.out.printf("Coworking space and associated reservation %d removed successfully", id);
+        return "addWorkspace";
     }
 
 
-    public List<Reservation> viewAllReservations() {
+    @GetMapping("/removeWorkspace")
+    public String showRemoveWorkspacePage(Model model) {
+        List<Workspace> workspaces = this.workspaceRepository.findAll();
+        model.addAttribute("workspaces", workspaces);
+        return "removeWorkspace";
+    }
+
+    @PostMapping("/removeWorkspace")
+    public String removeCoworkingSpace(
+            @RequestParam("id") int id,
+            RedirectAttributes redirectAttributes//RedirectAttributes are used to pass messages (success or error) between requests during redirection.
+    ) {
+        Workspace workspaceToBeRemoved = this.workspaceRepository.findById(id);
+
+        if (workspaceToBeRemoved == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "No coworking space found with ID: " + id);
+            return "redirect:/removeWorkspace";
+        }
+
+        this.workspaceRepository.delete(workspaceToBeRemoved);
+        redirectAttributes.addFlashAttribute("successMessage",
+                String.format("Coworking space with ID %d removed successfully.", id));
+
+        return "deleteConfirmation";
+    }
+
+    @GetMapping("/viewReservations")
+    public String viewAllReservations(Model model) {
         try {
             List<Reservation> reservations = this.reservationRepository.findReservations();
             CheckMethods.checkEmptiness(reservations, "reservations");
-            System.out.println("Here are all reservations :");
-            for (Reservation item : reservations) {
-                System.out.println(item);
-            }
-            return reservations;
+            model.addAttribute("reservations", reservations);
+            return "viewReservations";
+        } catch (CheckEmptinessException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            return "error";
         }
-        catch (CheckEmptinessException | NullPointerException e) {
-            System.out.println(e.getMessage());
-        }
-        return new ArrayList<>();
     }
 
 
-    public void updateCoworkingSpace() {
-        List<Workspace> workspaces = browseCoworkingSpaces();
-        if (workspaces.isEmpty()){
-            return;
+    @GetMapping("/updateWorkspace")
+    public String showUpdateWorkspacePage(@RequestParam(value = "id", required = false) Integer id, Model model) {
+        if (id != null) {
+            Workspace workspace = workspaceRepository.findById(id);
+            if (workspace == null) {
+                model.addAttribute("errorMessage", "No coworking space found with ID: " + id);
+            } else {
+                model.addAttribute("workspace", workspace);
+            }
+        } else {
+            List<Workspace> workspaces = workspaceRepository.findAll();
+            model.addAttribute("workspaces", workspaces);
+        }
+        return "updateWorkspace";
+    }
+
+    @PostMapping("/updateWorkspace")
+    public String updateCoworkingSpace(
+            @RequestParam("id") int id,
+            @RequestParam("type") String type,
+            @RequestParam("price") double price,
+            RedirectAttributes redirectAttributes) {
+        Workspace workspaceToBeUpdated = this.workspaceRepository.findById(id);
+
+        if (workspaceToBeUpdated == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "No coworking space found with ID: " + id);
+            return "redirect:/updateWorkspace";
         }
 
-        System.out.println("Type in the id of coworking space you want to update: ");
-        System.out.println("id(number) - ");
-        Workspace workspaceToBeUpdated = null;
-        int id;
-        while (true) {
-            try {
-                id = this.scanner.nextInt();
-                for (Workspace workspace : workspaces){
-                    if (workspace.getId() == id){
-                        workspaceToBeUpdated = workspace;
-                        break;
-                    }
-                }
-                if (workspaceToBeUpdated == null) {
-                    System.out.println("No such workspaces. Please enter another one: ");
-                    continue;
-            }
-            }catch (NullPointerException e) {
-                System.out.println("No such workspace. Please enter another one: ");
-                continue;
-            }
-            catch (InputMismatchException e) {
-                System.out.println("This is not a number!");
-                this.scanner.nextLine();
-                continue;
-            }
-            break; // id is a number -> no exception -> stops asking for id and accepts last one
-        }
-        System.out.println("Type in new type(1 word) - ");
-        String newType = this.scanner.next();
-        System.out.println("Type in new price in $(number) - ");
-        double newPrice;
-
-        while (true) {
-            try{
-                newPrice = this.scanner.nextDouble();
-            }
-            catch (InputMismatchException e) {
-                System.out.println("It's not a number!");
-                this.scanner.nextLine();
-                continue;
-            }
-            break; // newPrice is number -> no exception -> stops asking for price and accepts last one
-        }
-
-        workspaceToBeUpdated.setType(newType);
-        workspaceToBeUpdated.setPrice(newPrice);
+        workspaceToBeUpdated.setType(type);
+        workspaceToBeUpdated.setPrice(price);
         this.workspaceRepository.update(workspaceToBeUpdated);
-        System.out.println("Coworking space changed successfully");
-        }
+        redirectAttributes.addFlashAttribute("successMessage",
+                String.format("Coworking space with ID %d removed successfully.", id));
 
-    public void removeReservation(){
-        List<Reservation> reservations = viewAllReservations();
-        if (reservations.isEmpty()) {
-            return;
-        }
+        return "updateConfirmation";
+    }
 
-        System.out.println("Choose the reservation you want to remove by id: ");
-        System.out.println("id - ");
-        int id;
-        Reservation reservationToBeRemoved = null;
-        while (true) {
-            try {
-                id = this.scanner.nextInt();
-                for (Reservation reservation : reservations) {
-                    if (reservation.getId() == id) {
-                        reservationToBeRemoved = reservation;
-                        break;
-                    }
-                }
-                if (reservationToBeRemoved == null) {
-                    System.out.println("No such reservation. Please enter another one: ");
-                    continue;
-                }
-            } catch (InputMismatchException e) {
-                System.out.println("It's not a number!");
-                this.scanner.nextLine();
-                continue;
+
+    @PostMapping("/removeReservation")
+    public String removeReservation(@RequestParam("id") int id,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            Reservation reservationToBeRemoved = reservationRepository.findById(id);
+            if (reservationToBeRemoved == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "No reservations found with ID: " + id);
+                return "redirect:/admin/viewReservations";
             }
-            break;
+            this.reservationService.removeReservation(reservationToBeRemoved);
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                    String.format("Reservation with ID %d removed successfully.", id));
+        }catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error while removing the reservation: " + e.getMessage());
+            return "redirect:/admin/viewReservations";
         }
-        this.reservationService.removeReservation(reservationToBeRemoved);
-        System.out.println("Reservation was cancelled successfully!");
+
+        return "deleteConfirmation";
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

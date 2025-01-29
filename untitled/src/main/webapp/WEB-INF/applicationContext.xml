@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+        <property name="configLocation" value="classpath:hibernate.cfg.xml" />
+        <property name="packagesToScan" value="coworking.model" />
+    </bean>
+
+    <bean id="workspaceRepository" class="coworking.repository.WorkspaceRepository" autowire="constructor" />
+    <bean id="reservationRepository" class="coworking.repository.ReservationRepository" autowire="constructor" />
+    <bean id="reservationService" class="coworking.service.ReservationService" autowire="constructor" />
+    <bean id="userRepository" class="coworking.repository.UserRepository" autowire="constructor" />
+
+    <bean id="TestController" class="coworking.controller.TestController" autowire="constructor" />
+    <bean id="AdminController" class="coworking.controller.AdminController" autowire="constructor" />
+    <bean id="CustomerController" class="coworking.controller.CustomerController" autowire="constructor" />
+
+<!--    &lt;!&ndash; HomeController, injecting only ReservationService &ndash;&gt;-->
+<!--    <bean id="homeController" class="coworking.controller.HomeController">-->
+<!--        <property name="reservationService" ref="reservationService" />-->
+<!--    </bean>-->
+
+<!--    <bean id="myDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">-->
+<!--        <property name="driverClassName" value="com.mysql.cj.jdbc.Driver" />-->
+<!--        <property name="url" value="jdbc:mysql://localhost:3306/mydb" />-->
+<!--        <property name="username" value="root" />-->
+<!--        <property name="password" value="password" />-->
+<!--    </bean>-->
+
+</beans>

@@ -18,11 +18,11 @@ public class Reservation implements Serializable {
     @Column(name="ID")
     private int id;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name="workspace_id", nullable = false)
     private Workspace workspace;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name="user_id", nullable = false)
     private User user;
 

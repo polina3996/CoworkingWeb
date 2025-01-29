@@ -15,7 +15,13 @@ public class HQLQueries {
     public static final String selectFromWorkspTableSQL = """
             FROM Workspace""";
     public static final String selectFromUsersTableSQL = """
+            FROM User""";
+    public static final String selectFromUsersByNameTableSQL = """
             FROM User u
             WHERE u.name = :name""";
+    public static final String selectWorkspaceById = """
+            FROM Workspace WHERE id = :id""";
+    public static final String selectReservationById = """
+            FROM Reservation WHERE id = :id""";
 
 }

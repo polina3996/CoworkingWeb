@@ -31,4 +31,12 @@ public class ReservationRepository extends Repository<Workspace> {
             return myReservations;
     }
 }
+
+    public Reservation findById(int id){
+        try (Session session = sessionFactory.openSession()) {
+            Query<Reservation> query = session.createQuery(HQLQueries.selectReservationById, Reservation.class);
+            query.setParameter("id", id);
+            return query.uniqueResult();
+        }
+    }
 }

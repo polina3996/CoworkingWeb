@@ -2,7 +2,9 @@ package coworking.controller;
 
 import coworking.CheckEmptinessException;
 import coworking.CheckMethods;
+import coworking.dto.ReservationForm;
 import coworking.model.Reservation;
+import coworking.model.User;
 import coworking.model.Workspace;
 import coworking.repository.ReservationRepository;
 import coworking.repository.UserRepository;
@@ -10,11 +12,14 @@ import coworking.repository.WorkspaceRepository;
 import coworking.service.ReservationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.ArrayList;
-import java.util.InputMismatchException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Scanner;
+import java.util.Optional;
 
 /**
  * Browse available spaces, make reservations and cancel bookings
@@ -27,154 +32,134 @@ import java.util.Scanner;
 
 
 @Controller
+@RequestMapping("/customer")
 public class CustomerController {
-    private final Scanner scanner;
     private final WorkspaceRepository workspaceRepository;
     private final ReservationRepository reservationRepository;
     private final ReservationService reservationService;
     private final UserRepository userRepository;
 
     @Autowired
-    public CustomerController(Scanner scanner, WorkspaceRepository workspaceRepository, ReservationRepository reservationRepository, ReservationService reservationService, UserRepository userRepository) {
-        this.scanner = scanner;
+    public CustomerController(WorkspaceRepository workspaceRepository, ReservationRepository reservationRepository, ReservationService reservationService, UserRepository userRepository) {
         this.workspaceRepository = workspaceRepository;
         this.reservationRepository = reservationRepository;
         this.reservationService = reservationService;
         this.userRepository = userRepository;
     }
 
-    public List<Workspace> browseAvailableSpaces() {
+    @GetMapping("/browseAvailableWorkspaces")
+    public String browseAvailableSpaces(Model model) {
         try{
             List<Workspace> availableWorkspaces = this.workspaceRepository.findAvailableWorkspaces();
-            System.out.println("Here are available coworking spaces for you:");
-            for (Workspace workspace:availableWorkspaces){
-                System.out.println(workspace);
-            }
-            return availableWorkspaces;
+            model.addAttribute("availableWorkspaces", availableWorkspaces);
+            return "browseAvailableWorkspaces";
         }
         catch (NullPointerException e){
-            System.out.println("No available workspaces yet");
+            model.addAttribute("errorMessage", e.getMessage());
+            return "error";
     }
-        return new ArrayList<>();
-    }
-
-    public void makeAReservation() {
-        List<Workspace> availableWorkspaces = browseAvailableSpaces();
-        if (availableWorkspaces.isEmpty()){
-            return;
-        }
-
-        System.out.println("Choose the id of any available space: ");
-        System.out.println("id - ");
-        int id;
-        Workspace workspaceToBeReserved = null;
-
-        while (true) {
-            try {
-                id = this.scanner.nextInt();
-                for (Workspace workspace : availableWorkspaces){
-                    if (workspace.getId() == id){
-                        workspaceToBeReserved = workspace;
-                        break;
-                    }
-                }
-                if (workspaceToBeReserved == null){
-                    System.out.println("No such coworking space. Please enter another one: ");
-                    continue;
-                }
-            }
-            catch (InputMismatchException e) {
-                System.out.println("It's not a number!");
-                this.scanner.nextLine();
-                continue;
-            }
-            break; // id exists and it's number -> no exception -> stops asking for id and accepts last one
-        }
-
-        System.out.println("Type in all data to make a reservation: ");
-        System.out.println("your name - ");
-        String name = this.scanner.next();
-        System.out.println("date of start in dd-MM-yyyy format - ");
-        String start;
-        while (true) {
-            start = this.scanner.next();
-            if (CheckMethods.checkDate(start, "dd-MM-yyyy")){
-                break;
-            }
-            this.scanner.nextLine();
-        }
-
-        System.out.println("date of end in dd-MM-yyyy format - ");
-        String end;
-        while (true) {
-            end = this.scanner.next();
-            if (CheckMethods.checkDate(end, "dd-MM-yyyy")){
-                break;
-            }
-            this.scanner.nextLine();
-        }
-
-        this.reservationService.makeReservation(this.userRepository, workspaceToBeReserved, name, start, end);
-        System.out.println("New reservation was made successfully!");
     }
 
-    public List<Reservation> viewMyReservations() {
-        System.out.println("Type in your name: ");
-        System.out.println("name - ");
-        String name = this.scanner.next();
+    @GetMapping("/makeAReservation")
+    public String makeAReservation(Model model){
+        List<Workspace> availableWorkspaces = workspaceRepository.findAvailableWorkspaces();
+        model.addAttribute("availableWorkspaces", availableWorkspaces);
+        model.addAttribute("reservationForm", new ReservationForm());
+        return "makeAReservation";
+    }
 
-        List<Reservation> myReservations = null;
+
+    @PostMapping("/makeAReservation")
+    public String makeAReservation(@ModelAttribute ReservationForm reservationForm, Model model) {
         try {
-            System.out.println("Here are your reservations: ");
-            myReservations = this.reservationRepository.findMyReservations(name);
-            if (myReservations == null || myReservations.isEmpty()) {
-                System.out.println("You have no reservations yet");
-                return new ArrayList<>();
+            Workspace workspace = this.workspaceRepository.findById(reservationForm.getWorkspaceId());
+            if (workspace == null) {
+                throw new IllegalArgumentException("Invalid workspace ID");
             }
-            for (Reservation item : myReservations) {
-                System.out.println(item);
-            }
-        } catch (CheckEmptinessException e) {
-            System.out.println(e.getMessage());
+            String userName = reservationForm.getUserName();
+            LocalDate startDate = reservationForm.getStartDate();
+            LocalDate endDate = reservationForm.getEndDate();
+
+            this.reservationService.makeReservation(this.userRepository, workspace, userName, startDate, endDate);
+
+            model.addAttribute("message", "Reservation made successfully!");
+            return "reservationConfirmation";
+
+        } catch (Exception e) {
+            model.addAttribute("errorMessage", "Error making reservation: " + e.getMessage());
+            return "error";
         }
-        return myReservations;
     }
 
-    public void cancelMyReservation() {
-        List<Reservation> myReservations = viewMyReservations();
-        if (myReservations.isEmpty()) {
-            return;
+
+    @GetMapping("/myReservations")
+        public String askForName(Model model){
+            List<User> users = this.userRepository.findAll();
+            model.addAttribute("users", users);
+            return "selectUser";
+    }
+
+    //method will receive selected user's name
+    @PostMapping("/myReservations")
+    public String viewMyReservations(@RequestParam("name") String name, Model model) {
+        try {
+            List<Reservation> myReservations = this.reservationRepository.findMyReservations(name);
+
+            if (myReservations == null || myReservations.isEmpty()) {
+                model.addAttribute("message", "You have no reservations yet.");
+                return "myReservations";
+            }
+
+            model.addAttribute("reservations", myReservations);
+            model.addAttribute("userName", name);
+
+            return "myReservations";
+        } catch (Exception e) {
+            model.addAttribute("error", "An error occurred while retrieving your reservations. Please try again.");
+            return "error";
+        }
+    }
+
+
+// ADD IT WITH LOGIN
+//    @GetMapping("/myReservations")
+//    public String viewMyReservations(@RequestParam("name") String name, Model model) {
+//        try {
+//            List<Reservation> myReservations = reservationRepository.findMyReservations(name);
+//
+//            if (myReservations == null || myReservations.isEmpty()) {
+//                model.addAttribute("message", "You have no reservations yet.");
+//                return "reservations/myReservations";
+//            }
+//
+//            model.addAttribute("reservations", myReservations);
+//            model.addAttribute("userName", name);
+//        } catch (Exception e) {
+//            model.addAttribute("error", "An error occurred while retrieving your reservations. Please try again.");
+//        }
+//
+//        return "myReservations"; // JSP page to display reservations
+//    }
+
+    @PostMapping("/cancelMyReservation")
+    public String removeReservation(@RequestParam("id") int id,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            Reservation reservationToBeRemoved = reservationRepository.findById(id);
+            if (reservationToBeRemoved == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "No reservations found with ID: " + id);
+                return "redirect:/customer/myReservations";
+            }
+            this.reservationService.removeReservation(reservationToBeRemoved);
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                    String.format("Reservation with ID %d removed successfully.", id));
+        }catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error while removing the reservation: " + e.getMessage());
+            return "redirect:/customer/myReservations";
         }
 
-        System.out.println("Choose the reservation you want to cancel by id: ");
-        System.out.println("id - ");
-        int id;
-        Reservation reservationToBeCancelled = null;
-
-        while (true) {
-            try {
-                id = this.scanner.nextInt();
-                for (Reservation reservation : myReservations){
-                    if (reservation.getId() == id){
-                        reservationToBeCancelled = reservation;
-                        break;
-                    }
-                }
-                if (reservationToBeCancelled == null){
-                    System.out.println("No such reservation. Please enter another one: ");
-                    continue;
-                }
-            }
-            catch (InputMismatchException e) {
-                System.out.println("It's not a number!");
-                this.scanner.nextLine();
-                continue;
-            }
-            break; // id exists and it's number -> no exception -> stops asking for id and accepts last one
-        }
-        this.reservationService.removeReservation(reservationToBeCancelled);
-        System.out.println("Your reservation was cancelled successfully!");
-
+        return "deleteConfirmation";
     }
 }
 

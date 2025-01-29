@@ -1,36 +1,23 @@
-package coworking;
-
-import coworking.config.AppConfig;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-
-import java.lang.reflect.Method;
-
-
-public class CoworkingSpaceReservationApp {
-    public static void main(String[] args)  {
-        String path = "C:\\Users\\polin\\IdeaProjects\\Andersen-Homeworks\\Homework1-CoworkingSpaces\\src\\main\\java\\coworking\\Greeting.java";
-        String className = "coworking.Greeting";
-
-        try {
-            GreetingClassLoader classLoader = new GreetingClassLoader(path);
-            Class<?> loadedClass = classLoader.loadClass(className);
-            Object instance = loadedClass.getDeclaredConstructor().newInstance();
-            Method method = loadedClass.getMethod("printGreeting");
-            method.invoke(instance);
-        }
-        catch (Exception e) {
-            System.out.println("Class loading has gone wrong" + e.getMessage());
-        }
-
-        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
-
-
-        MainMenu mainMenu = context.getBean(MainMenu.class);
-        do {
-            mainMenu.showMainMenu();
-        } while (mainMenu.processUserInput());
-
-        ((AnnotationConfigApplicationContext) context).close();
-    }
-}
+//package coworking;
+//
+//import jakarta.servlet.ServletContext;
+//import jakarta.servlet.ServletException;
+//import jakarta.servlet.ServletRegistration;
+//import org.springframework.web.WebApplicationInitializer;
+//import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
+//import org.springframework.web.context.support.XmlWebApplicationContext;
+//import org.springframework.web.servlet.DispatcherServlet;
+//
+//public class CoworkingSpaceReservationApp implements WebApplicationInitializer {
+//    @Override
+//    public void onStartup(ServletContext servletContext) throws ServletException {
+//        //AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();
+//        XmlWebApplicationContext context = new XmlWebApplicationContext();
+//        //context.register(WebConfig.class);
+//        context.setConfigLocation("/WEB-INF/WebConfiguration.xml");
+//
+//        ServletRegistration.Dynamic dispatcher = servletContext.addServlet("dispatcher", new DispatcherServlet(context));
+//        dispatcher.setLoadOnStartup(1);
+//        dispatcher.addMapping("/");
+//    }
+//}
