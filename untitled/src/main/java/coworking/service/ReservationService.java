@@ -44,26 +44,6 @@ public class ReservationService {
         }
     }
 
-    public boolean cancelReservationById(ReservationRepository reservationRepository, int id){
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            Reservation reservationToBeCancelled = reservationRepository.findById(id);
-            reservationToBeCancelled.getWorkspace().setAvailabilityStatus(true);
-            session.delete(reservationToBeCancelled);
-            session.update(reservationToBeCancelled.getWorkspace());
-            transaction.commit();
-            return true;
-        }catch (Exception e) {
-            if (transaction != null) {
-                transaction.rollback();
-                return false;
-            }
-            throw new RuntimeException("Failed to save entity", e);
-        }
-
-    }
-
 
     public void removeReservation(Reservation reservationToBeRemoved) {
         Transaction transaction = null;

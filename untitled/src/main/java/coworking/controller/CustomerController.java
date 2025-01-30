@@ -1,7 +1,5 @@
 package coworking.controller;
 
-import coworking.CheckEmptinessException;
-import coworking.CheckMethods;
 import coworking.dto.ReservationForm;
 import coworking.model.Reservation;
 import coworking.model.User;
@@ -17,9 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Browse available spaces, make reservations and cancel bookings
