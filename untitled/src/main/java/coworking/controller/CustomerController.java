@@ -16,6 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Browse available spaces, make reservations and cancel bookings
@@ -24,7 +25,6 @@ import java.util.List;
  * - store the reservation details in memory
  * - see their reservations and cancel them by selecting the reservation ID
  */
-
 
 
 @Controller
@@ -46,7 +46,7 @@ public class CustomerController {
     @GetMapping("/browseAvailableWorkspaces")
     public String browseAvailableSpaces(Model model) {
         try{
-            List<Workspace> availableWorkspaces = this.workspaceRepository.findAvailableWorkspaces();
+            List<Workspace> availableWorkspaces = this.workspaceRepository.findByAvailabilityStatusTrue();
             model.addAttribute("availableWorkspaces", availableWorkspaces);
             return "browseAvailableWorkspaces";
         }
@@ -58,7 +58,7 @@ public class CustomerController {
 
     @GetMapping("/makeAReservation")
     public String makeAReservation(Model model){
-        List<Workspace> availableWorkspaces = workspaceRepository.findAvailableWorkspaces();
+        List<Workspace> availableWorkspaces = workspaceRepository.findByAvailabilityStatusTrue();
         model.addAttribute("availableWorkspaces", availableWorkspaces);
         model.addAttribute("reservationForm", new ReservationForm());
         return "makeAReservation";
@@ -68,7 +68,8 @@ public class CustomerController {
     @PostMapping("/makeAReservation")
     public String makeAReservation(@ModelAttribute ReservationForm reservationForm, Model model) {
         try {
-            Workspace workspace = this.workspaceRepository.findById(reservationForm.getWorkspaceId());
+            Workspace workspace = this.workspaceRepository.findById(reservationForm.getWorkspaceId())
+                    .orElse(null);
             if (workspace == null) {
                 throw new IllegalArgumentException("Invalid workspace ID");
             }
@@ -76,7 +77,7 @@ public class CustomerController {
             LocalDate startDate = reservationForm.getStartDate();
             LocalDate endDate = reservationForm.getEndDate();
 
-            this.reservationService.makeReservation(this.userRepository, workspace, userName, startDate, endDate);
+            this.reservationService.makeReservation(workspace, userName, startDate, endDate);
 
             model.addAttribute("message", "Reservation made successfully!");
             return "reservationConfirmation";
@@ -87,7 +88,6 @@ public class CustomerController {
         }
     }
 
-
     @GetMapping("/myReservations")
         public String askForName(Model model){
             List<User> users = this.userRepository.findAll();
@@ -95,11 +95,11 @@ public class CustomerController {
             return "selectUser";
     }
 
-    //method will receive selected user's name
+
     @PostMapping("/myReservations")
     public String viewMyReservations(@RequestParam("name") String name, Model model) {
         try {
-            List<Reservation> myReservations = this.reservationRepository.findMyReservations(name);
+            List<Reservation> myReservations = this.reservationRepository.findByUser_Name(name);
 
             if (myReservations == null || myReservations.isEmpty()) {
                 model.addAttribute("message", "You have no reservations yet.");
@@ -117,31 +117,12 @@ public class CustomerController {
     }
 
 
-// ADD IT WITH LOGIN
-//    @GetMapping("/myReservations")
-//    public String viewMyReservations(@RequestParam("name") String name, Model model) {
-//        try {
-//            List<Reservation> myReservations = reservationRepository.findMyReservations(name);
-//
-//            if (myReservations == null || myReservations.isEmpty()) {
-//                model.addAttribute("message", "You have no reservations yet.");
-//                return "reservations/myReservations";
-//            }
-//
-//            model.addAttribute("reservations", myReservations);
-//            model.addAttribute("userName", name);
-//        } catch (Exception e) {
-//            model.addAttribute("error", "An error occurred while retrieving your reservations. Please try again.");
-//        }
-//
-//        return "myReservations"; // JSP page to display reservations
-//    }
-
     @PostMapping("/cancelMyReservation")
     public String removeReservation(@RequestParam("id") int id,
                                     RedirectAttributes redirectAttributes) {
         try {
-            Reservation reservationToBeRemoved = reservationRepository.findById(id);
+            Reservation reservationToBeRemoved = reservationRepository.findById(id)
+                    .orElse(null);
             if (reservationToBeRemoved == null) {
                 redirectAttributes.addFlashAttribute("errorMessage", "No reservations found with ID: " + id);
                 return "redirect:/customer/myReservations";
@@ -158,6 +139,3 @@ public class CustomerController {
         return "deleteConfirmation";
     }
 }
-
-
-

@@ -9,7 +9,7 @@ import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
 public abstract class Repository<T> {
-    private final SessionFactory sessionFactory;;
+    private final SessionFactory sessionFactory;
 
     protected Repository(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
@@ -38,7 +38,7 @@ public abstract class Repository<T> {
             if (transaction != null) {
                 transaction.rollback(); // Rollback if something goes wrong
             }
-            throw new RuntimeException("Failed to save entity", e);
+            throw new RuntimeException("Failed to update entity", e);
         }
     }
 
@@ -52,7 +52,7 @@ public abstract class Repository<T> {
             if (transaction != null) {
                 transaction.rollback(); // Rollback if something goes wrong
             }
-            throw new RuntimeException("Failed to save entity", e);
+            throw new RuntimeException("Failed to delete entity", e);
         }
     }
 
