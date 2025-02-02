@@ -5,61 +5,48 @@ import coworking.model.User;
 import coworking.model.Workspace;
 import coworking.repository.ReservationRepository;
 import coworking.repository.UserRepository;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
+import coworking.repository.WorkspaceRepository;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 @Service
+@Transactional
 public class ReservationService {
-    protected final SessionFactory sessionFactory;
+    private final ReservationRepository reservationRepository;
+    private final UserRepository userRepository;
+    private final WorkspaceRepository workspaceRepository;
 
-    public ReservationService(SessionFactory sessionFactory) {
-        this.sessionFactory = sessionFactory;
+    @Autowired
+    public ReservationService(ReservationRepository reservationRepository,
+                              UserRepository userRepository,
+                              WorkspaceRepository workspaceRepository) {
+        this.reservationRepository = reservationRepository;
+        this.userRepository = userRepository;
+        this.workspaceRepository = workspaceRepository;
     }
 
-    public void makeReservation(UserRepository userRepository, Workspace workspaceToBeReserved, String name, LocalDate start, LocalDate end) {
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            User user = userRepository.findUser(name);
-            if (user == null){
-                user = new User(name);
-                session.save(user); //userFromTable is transient(save it first, because we can't save reservation without userFromTable)
-            }
-            Reservation reservation = new Reservation(workspaceToBeReserved, user, start, end);
-            workspaceToBeReserved.setAvailabilityStatus(false);
-
-            session.save(reservation);
-            session.update(workspaceToBeReserved);
-            transaction.commit();
-        } catch (Exception e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            throw new RuntimeException("Failed to save entity", e);
+    public void makeReservation(Workspace workspaceToBeReserved, String name, LocalDate start, LocalDate end) {
+        User user = this.userRepository.findByName(name);
+        if (user == null){
+            user = new User(name);
+            this.userRepository.save(user);
         }
+        Reservation reservation = new Reservation(workspaceToBeReserved, user, start, end);
+        workspaceToBeReserved.setAvailabilityStatus(false);
+
+        this.reservationRepository.save(reservation);
+        this.workspaceRepository.save(workspaceToBeReserved);
     }
 
 
     public void removeReservation(Reservation reservationToBeRemoved) {
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            Workspace workspace = reservationToBeRemoved.getWorkspace();
-            workspace.setAvailabilityStatus(true);
+        Workspace workspace = reservationToBeRemoved.getWorkspace();
+        workspace.setAvailabilityStatus(true);
 
-            session.delete(reservationToBeRemoved);
-            session.update(workspace);
-            transaction.commit();
-    }catch (Exception e) {
-        if (transaction != null) {
-            transaction.rollback();
-        }
-        throw new RuntimeException("Failed to save entity", e);
-    }
+        this.reservationRepository.delete(reservationToBeRemoved);
+        this.workspaceRepository.save(workspace);
 }
 }

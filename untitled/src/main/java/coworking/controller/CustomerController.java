@@ -2,18 +2,15 @@ package coworking.controller;
 
 import coworking.dto.ReservationForm;
 import coworking.model.Reservation;
-import coworking.model.User;
 import coworking.model.Workspace;
 import coworking.repository.ReservationRepository;
 import coworking.repository.UserRepository;
 import coworking.repository.WorkspaceRepository;
 import coworking.service.ReservationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -26,9 +23,8 @@ import java.util.Objects;
  * - see their reservations and cancel them by selecting the reservation ID
  */
 
-
-@Controller
-@RequestMapping("/customer")
+@RestController
+@RequestMapping("/api/customer")
 public class CustomerController {
     private final WorkspaceRepository workspaceRepository;
     private final ReservationRepository reservationRepository;
@@ -43,99 +39,64 @@ public class CustomerController {
         this.userRepository = userRepository;
     }
 
-    @GetMapping("/browseAvailableWorkspaces")
-    public String browseAvailableSpaces(Model model) {
-        try{
-            List<Workspace> availableWorkspaces = this.workspaceRepository.findByAvailabilityStatusTrue();
-            model.addAttribute("availableWorkspaces", availableWorkspaces);
-            return "browseAvailableWorkspaces";
-        }
-        catch (NullPointerException e){
-            model.addAttribute("errorMessage", e.getMessage());
-            return "error";
-    }
-    }
 
-    @GetMapping("/makeAReservation")
-    public String makeAReservation(Model model){
-        List<Workspace> availableWorkspaces = workspaceRepository.findByAvailabilityStatusTrue();
-        model.addAttribute("availableWorkspaces", availableWorkspaces);
-        model.addAttribute("reservationForm", new ReservationForm());
-        return "makeAReservation";
+    @GetMapping("/browseAvailableWorkspaces")
+    public ResponseEntity<List<Workspace>> browseAvailableSpaces() {
+        List<Workspace> availableWorkspaces = this.workspaceRepository.findByAvailabilityStatusTrue();
+        return ResponseEntity.ok(availableWorkspaces);
     }
 
 
     @PostMapping("/makeAReservation")
-    public String makeAReservation(@ModelAttribute ReservationForm reservationForm, Model model) {
+    public ResponseEntity<?> makeAReservation(@RequestBody ReservationForm reservationForm) {
         try {
             Workspace workspace = this.workspaceRepository.findById(reservationForm.getWorkspaceId())
-                    .orElse(null);
-            if (workspace == null) {
-                throw new IllegalArgumentException("Invalid workspace ID");
-            }
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid workspace ID"));
+
             String userName = reservationForm.getUserName();
             LocalDate startDate = reservationForm.getStartDate();
             LocalDate endDate = reservationForm.getEndDate();
+            if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
+                throw new IllegalArgumentException("Invalid reservation dates.");
+            }
 
             this.reservationService.makeReservation(workspace, userName, startDate, endDate);
 
-            model.addAttribute("message", "Reservation made successfully!");
-            return "reservationConfirmation";
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body("Reservation made successfully!");
 
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body("Error: " + e.getMessage());
         } catch (Exception e) {
-            model.addAttribute("errorMessage", "Error making reservation: " + e.getMessage());
-            return "error";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Unexpected error occurred: " + e.getMessage());
         }
     }
-
-    @GetMapping("/myReservations")
-        public String askForName(Model model){
-            List<User> users = this.userRepository.findAll();
-            model.addAttribute("users", users);
-            return "selectUser";
-    }
-
 
     @PostMapping("/myReservations")
-    public String viewMyReservations(@RequestParam("name") String name, Model model) {
-        try {
-            List<Reservation> myReservations = this.reservationRepository.findByUser_Name(name);
+    public ResponseEntity<?> viewMyReservations(@RequestParam("name") String name) {
+        List<Reservation> myReservations = this.reservationRepository.findByUser_Name(name);
 
-            if (myReservations == null || myReservations.isEmpty()) {
-                model.addAttribute("message", "You have no reservations yet.");
-                return "myReservations";
-            }
-
-            model.addAttribute("reservations", myReservations);
-            model.addAttribute("userName", name);
-
-            return "myReservations";
-        } catch (Exception e) {
-            model.addAttribute("error", "An error occurred while retrieving your reservations. Please try again.");
-            return "error";
+        if (myReservations == null || myReservations.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("No reservations for user: " + name);
         }
+
+        return ResponseEntity.ok(myReservations);
     }
 
 
     @PostMapping("/cancelMyReservation")
-    public String removeReservation(@RequestParam("id") int id,
-                                    RedirectAttributes redirectAttributes) {
-        try {
-            Reservation reservationToBeRemoved = reservationRepository.findById(id)
-                    .orElse(null);
-            if (reservationToBeRemoved == null) {
-                redirectAttributes.addFlashAttribute("errorMessage", "No reservations found with ID: " + id);
-                return "redirect:/customer/myReservations";
-            }
-            this.reservationService.removeReservation(reservationToBeRemoved);
-
-            redirectAttributes.addFlashAttribute("successMessage",
-                    String.format("Reservation with ID %d removed successfully.", id));
-        }catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Error while removing the reservation: " + e.getMessage());
-            return "redirect:/customer/myReservations";
+    public ResponseEntity<?> removeReservation(@RequestParam("id") int id, @RequestParam("name") String name) {
+        Reservation reservationToBeRemoved = this.reservationRepository.findById(id)
+                .orElse(null);
+        if (reservationToBeRemoved == null || !Objects.equals(reservationToBeRemoved.getUser().getName(), name)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("No reservation found with ID: " + id);
         }
-
-        return "deleteConfirmation";
+        this.reservationService.removeReservation(reservationToBeRemoved);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body("Reservation with ID " + id + " removed successfully.");
     }
 }
