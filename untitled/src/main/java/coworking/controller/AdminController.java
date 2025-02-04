@@ -3,10 +3,11 @@ package coworking.controller;
 import coworking.model.Reservation;
 import coworking.model.Workspace;
 import coworking.repository.ReservationRepository;
-import coworking.repository.UserRepository;
+import coworking.repository.UserEntityRepository;
 import coworking.repository.WorkspaceRepository;
 import coworking.service.ReservationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -23,17 +24,16 @@ public class AdminController {
     private final WorkspaceRepository workspaceRepository;
     private final ReservationRepository reservationRepository;
     private final ReservationService reservationService;
-    private final UserRepository userRepository;
+    private final UserEntityRepository userEntityRepository;
 
 
     @Autowired
-    public AdminController(WorkspaceRepository workspaceRepository, ReservationRepository reservationRepository, ReservationService reservationService, UserRepository userRepository) {
+    public AdminController(WorkspaceRepository workspaceRepository, ReservationRepository reservationRepository, ReservationService reservationService, UserEntityRepository userEntityRepository) {
         this.workspaceRepository = workspaceRepository;
         this.reservationRepository = reservationRepository;
         this.reservationService = reservationService;
-        this.userRepository = userRepository;
+        this.userEntityRepository = userEntityRepository;
     }
-
 
     @GetMapping("/viewWorkspaces")
     public ResponseEntity<List<Workspace>> viewAllWorkspaces() {
@@ -62,11 +62,13 @@ public class AdminController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body("Coworking space with ID " + id + " removed successfully.");
     }
+
     @GetMapping("/viewReservations")
     public ResponseEntity<List<Reservation>> viewAllReservations() {
         List<Reservation> reservations = this.reservationRepository.findAll();
         return ResponseEntity.ok(reservations);
     }
+
 
     @PostMapping("/updateWorkspace")
     public ResponseEntity<?> updateCoworkingSpace(
@@ -88,6 +90,7 @@ public class AdminController {
                 .body("Coworking space with ID " + id + " updated successfully.");
     }
 
+
     @PostMapping("/removeReservation")
     public ResponseEntity<?> removeReservation(@RequestParam("id") int id) {
         Reservation reservationToBeRemoved = reservationRepository.findById(id)
@@ -102,18 +105,3 @@ public class AdminController {
                 .body("Reservation with ID " + id + " removed successfully.");
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

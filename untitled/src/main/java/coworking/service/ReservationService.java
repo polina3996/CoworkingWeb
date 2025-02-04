@@ -1,10 +1,10 @@
 package coworking.service;
 
 import coworking.model.Reservation;
-import coworking.model.User;
+import coworking.model.UserEntity;
 import coworking.model.Workspace;
 import coworking.repository.ReservationRepository;
-import coworking.repository.UserRepository;
+import coworking.repository.UserEntityRepository;
 import coworking.repository.WorkspaceRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,24 +16,24 @@ import java.time.LocalDate;
 @Transactional
 public class ReservationService {
     private final ReservationRepository reservationRepository;
-    private final UserRepository userRepository;
+    private final UserEntityRepository userEntityRepository;
     private final WorkspaceRepository workspaceRepository;
 
     @Autowired
     public ReservationService(ReservationRepository reservationRepository,
-                              UserRepository userRepository,
+                              UserEntityRepository userEntityRepository,
                               WorkspaceRepository workspaceRepository) {
         this.reservationRepository = reservationRepository;
-        this.userRepository = userRepository;
+        this.userEntityRepository = userEntityRepository;
         this.workspaceRepository = workspaceRepository;
     }
 
     public void makeReservation(Workspace workspaceToBeReserved, String name, LocalDate start, LocalDate end) {
-        User user = this.userRepository.findByName(name);
-        if (user == null){
-            user = new User(name);
-            this.userRepository.save(user);
+        if (!workspaceToBeReserved.getAvailabilityStatus()) {
+            throw new IllegalStateException("Workspace is already reserved.");
         }
+
+        UserEntity user = this.userEntityRepository.findByName(name);
         Reservation reservation = new Reservation(workspaceToBeReserved, user, start, end);
         workspaceToBeReserved.setAvailabilityStatus(false);
 
