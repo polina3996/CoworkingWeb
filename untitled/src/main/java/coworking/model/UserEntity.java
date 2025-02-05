@@ -20,15 +20,17 @@ public class UserEntity {
     @Column(nullable = false)
     private String password;
 
+    // Single role field
     @Column(nullable = false)
-    private String role = "USER";
+    private String role = "USER"; // Default role
 
     public UserEntity() {}
 
     public UserEntity(String name, String password, String role) {
         this.name = name;
         this.password = password;
-        this.role = role;
+        // Ensure role is prefixed with "ROLE_" for compatibility with Spring Security
+        this.role = (role != null && !role.isEmpty()) ? role : "USER";
     }
 
     public int getId(){
@@ -55,8 +57,8 @@ public class UserEntity {
         return this.role;
     }
 
-    public void setRole(String newRole){
-        this.role = newRole;
+    public void setRole(String newRole) {
+        this.role = "ROLE_" + newRole; // Ensure role is prefixed with "ROLE_"
     }
 
     @Override

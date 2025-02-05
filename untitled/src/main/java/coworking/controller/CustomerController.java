@@ -78,7 +78,7 @@ public class CustomerController {
         }
     }
 
-    @PostMapping("/myReservations")
+    @GetMapping("/myReservations")
     public ResponseEntity<?> viewMyReservations() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
