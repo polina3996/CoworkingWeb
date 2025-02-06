@@ -2,7 +2,6 @@ package coworking.dto;
 
 
 public class RegisterRequest {
-    //This class will hold the data sent when a user registers:
     private String username;
     private String password;
     private String role;

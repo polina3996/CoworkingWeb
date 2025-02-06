@@ -46,12 +46,11 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Username already exists");
         }
 
-        // Default role is set to "ROLE_USER" if no role is provided
         String role = (request.getRole() != null && !request.getRole().isEmpty()) ? "ROLE_" + request.getRole() : "ROLE_USER";
 
         UserEntity user = new UserEntity(
                 request.getUsername(),
-                this.passwordEncoder.encode(request.getPassword()),  // Encrypt password before saving
+                this.passwordEncoder.encode(request.getPassword()),
                 role
         );
 
@@ -66,15 +65,15 @@ public class AuthController {
         this.authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
-        // Load user details (e.g., roles)
+
         UserEntity user = this.userEntityRepository.findByName(request.getUsername());
 
         SimpleGrantedAuthority authority = new SimpleGrantedAuthority(user.getRole());
-        // Generate JWT token with the user's roles
+
         final String jwt = this.jwtUtil.generateToken(new User(
                 user.getName(),
                 user.getPassword(),
-                java.util.Collections.singletonList(authority) // Use a single authority (role)
+                java.util.Collections.singletonList(authority)
         ));
         return ResponseEntity.ok(new AuthResponse(jwt));
     }

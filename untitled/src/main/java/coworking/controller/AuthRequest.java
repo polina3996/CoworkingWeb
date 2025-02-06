@@ -1,7 +1,6 @@
 package coworking.controller;
 
 public class AuthRequest {
-    //(Handles login request payload) Represents login request body (username + password)
     private String username;
     private String password;
 

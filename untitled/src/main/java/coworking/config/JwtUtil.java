@@ -20,25 +20,18 @@ public class JwtUtil {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        // Add role claim (just the role string)
         claims.put("role", userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(", "))); // A single role will work fine here
+                .collect(Collectors.joining(", ")));
 
         DefaultJwtBuilder jwtBuilder = new DefaultJwtBuilder();
-        System.out.println("Signing Key: " + SECRET_KEY); // Log the key
 
         String token = Jwts.builder()
                 .setClaims(claims)
                 .setSubject(userDetails.getUsername())
-                //.claim("role", userDetails.getAuthorities())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours validity
-                //.signWith(SignatureAlgorithm.HS256, SECRET_KEY)
-                //.signWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes()))
-                .signWith(SECRET_KEY)
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))                 .signWith(SECRET_KEY)
                 .compact();
-        System.out.println("Generated JWT Token: " + token);
         return token;
     }
 
@@ -56,7 +49,6 @@ public class JwtUtil {
     }
 
     private Claims extractAllClaims(String token) {
-        System.out.println("Verifying with Key: " + SECRET_KEY);
         return Jwts.parser()
                 .setSigningKey(SECRET_KEY)
                 .build()
@@ -64,10 +56,9 @@ public class JwtUtil {
                 .getBody();
     }
 
-    // Method to extract roles from the token (returns a single role as a String)
     public String extractRole(String token) {
         Claims claims = extractAllClaims(token);
-        return claims.get("role", String.class);  // Get the role from the token claims
+        return claims.get("role", String.class);
     }
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());

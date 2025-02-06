@@ -1,5 +1,4 @@
 package coworking.config;
-import coworking.CustomAuthenticationProvider;
 import coworking.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,16 +15,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    //Ensure that you disable session management and add the
-    // JWT filter before UsernamePasswordAuthenticationFilter.
-
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CustomAuthenticationProvider authenticationProvider;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CustomAuthenticationProvider authenticationProvider) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.authenticationProvider = authenticationProvider;
-    }
+            }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -35,12 +29,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/customer/**").hasRole("USER")
-                    .anyRequest().authenticated() // Require authentication for other endpoints
+                    .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))// Disable sessions
-                .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-//        /ensures that JWT authentication is applied before Spring's default authentication process.
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
     @Bean
@@ -51,10 +43,4 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-    //Login Attempt: When you hit /api/auth/login, the request should pass through Spring Security's filter chain.
-    //AuthenticationManager: The AuthenticationManager should authenticate the user based on the login credentials (username and password).
-    //JWT Issuance: Once authenticated, a JWT should be generated and sent in the response.
 }
-
-
