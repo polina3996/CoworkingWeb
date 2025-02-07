@@ -1,27 +1,20 @@
 package coworking.controller;
 
 import coworking.config.JwtUtil;
+import coworking.dto.AuthRequest;
+import coworking.dto.AuthResponse;
 import coworking.dto.RegisterRequest;
 import coworking.model.UserEntity;
 import coworking.repository.UserEntityRepository;
-import coworking.service.CustomUserDetailsService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -62,19 +55,23 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
-        this.authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
+        try{
+            this.authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+                );
 
-        UserEntity user = this.userEntityRepository.findByName(request.getUsername());
+            UserEntity user = this.userEntityRepository.findByName(request.getUsername());
 
-        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(user.getRole());
+            SimpleGrantedAuthority authority = new SimpleGrantedAuthority(user.getRole());
 
-        final String jwt = this.jwtUtil.generateToken(new User(
-                user.getName(),
-                user.getPassword(),
-                java.util.Collections.singletonList(authority)
-        ));
-        return ResponseEntity.ok(new AuthResponse(jwt));
+            final String jwt = this.jwtUtil.generateToken(new User(
+                    user.getName(),
+                    user.getPassword(),
+                    java.util.Collections.singletonList(authority)
+            ));
+            return ResponseEntity.ok(new AuthResponse(jwt));
+    } catch (BadCredentialsException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
     }
+}
 }

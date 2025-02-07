@@ -36,6 +36,9 @@ public class Workspace implements Serializable {
         return this.id;
     }
 
+    public void setId(int newId) {
+        this.id = newId;
+    }
     public String getType(){
         return this.type;
     }
@@ -63,4 +66,6 @@ public class Workspace implements Serializable {
     public String toString() {
         return String.format("A workspace with id: %d, type: %s, price: %.2f, availability: %b", getId(), getType(), getPrice(), getAvailabilityStatus());
     }
+
+
 }

@@ -84,7 +84,7 @@ public class CustomerController {
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Error: You must be logged in to make a reservation.");
         }
-        String userName = authentication.getName(); //get user's name from current session
+        String userName = authentication.getName();
         List<Reservation> myReservations = this.reservationRepository.findByUser_Name(userName);
 
         if (myReservations == null || myReservations.isEmpty()) {
@@ -102,7 +102,7 @@ public class CustomerController {
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Error: You must be logged in to make a reservation.");
         }
-        String userName = authentication.getName(); //get user's name from current session
+        String userName = authentication.getName();
         Reservation reservationToBeRemoved = this.reservationRepository.findById(id)
                 .orElse(null);
         if (reservationToBeRemoved == null || !Objects.equals(reservationToBeRemoved.getUser().getName(), userName)) {

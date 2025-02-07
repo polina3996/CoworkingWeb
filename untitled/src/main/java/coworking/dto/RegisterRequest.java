@@ -6,6 +6,16 @@ public class RegisterRequest {
     private String password;
     private String role;
 
+//    // Default constructor (needed for Spring deserialization)
+//    public RegisterRequest() {
+//    }
+    //No-argument Constructor: A no-argument constructor is required
+    // so that Spring can instantiate the RegisterRequest object when deserializing
+    // the JSON request body.
+
+    //Getters and Setters: These allow Spring to populate the fields of
+    // RegisterRequest when it receives the HTTP request body.
+
     public String getPassword(){
         return this.password;
     }
