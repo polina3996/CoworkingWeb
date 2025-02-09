@@ -1,42 +1,12 @@
 package coworking.repository;
-
-import coworking.databases.HQLQueries;
 import coworking.model.Reservation;
-import coworking.model.Workspace;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.query.Query;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
 @org.springframework.stereotype.Repository
-public class ReservationRepository extends Repository<Workspace> {
-    private final SessionFactory sessionFactory;
+public interface ReservationRepository extends JpaRepository<Reservation, Integer> {
+    List<Reservation> findByUser_Name(String name);
 
-    public ReservationRepository(SessionFactory sessionFactory) {
-        super(sessionFactory);
-        this.sessionFactory = sessionFactory;
-    }
-    public List<Reservation> findReservations() {
-        try (Session session = sessionFactory.openSession()) {
-            return session.createQuery(HQLQueries.selectFromReservTableSQL, Reservation.class).list();
-    }
-    }
 
-    public List<Reservation> findMyReservations(String name) {
-        try (Session session = sessionFactory.openSession()){
-            Query<Reservation> query = session.createQuery(HQLQueries.selectFromMyReservTableSQL, Reservation.class);
-            query.setParameter("name", name);
-            List<Reservation> myReservations = query.list();
-            return myReservations;
-    }
-}
-
-    public Reservation findById(int id){
-        try (Session session = sessionFactory.openSession()) {
-            Query<Reservation> query = session.createQuery(HQLQueries.selectReservationById, Reservation.class);
-            query.setParameter("id", id);
-            return query.uniqueResult();
-        }
-    }
 }
