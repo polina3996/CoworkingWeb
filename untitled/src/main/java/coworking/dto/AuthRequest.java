@@ -1,4 +1,4 @@
-package coworking.controller;
+package coworking.dto;
 
 public class AuthRequest {
     private String username;

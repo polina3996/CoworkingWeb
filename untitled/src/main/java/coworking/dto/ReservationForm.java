@@ -19,5 +19,10 @@ public class ReservationForm {
         return endDate;
     }
 
+    public void setWorkspaceId(int newId) { workspaceId = newId;}
+
+    public void setStartDate(LocalDate start) {startDate = start; }
+
+    public void setEndDate(LocalDate end) {endDate = end;}
 }
 

@@ -48,6 +48,8 @@ public class Reservation implements Serializable {
         return this.id;
     }
 
+    public void setId(int newId){ this.id = newId;}
+
     public Workspace getWorkspace() {
         return this.workspace;
     }

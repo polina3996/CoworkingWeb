@@ -1,4 +1,4 @@
-package coworking.controller;
+package coworking.dto;
 
 public class AuthResponse {
     private String token;
@@ -10,4 +10,6 @@ public class AuthResponse {
     public String getToken() {
         return token;
     }
+
+    public void setToken(String newToken){this.token = newToken;}
 }

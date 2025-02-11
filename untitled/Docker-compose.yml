@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    container_name: coworking_container
+    depends_on:
+      - db
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/DockerDatabase
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres3996
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    networks:
+      - coworking_network
+
+  db:
+    image: postgres:15
+    container_name: CoworkingSpaceAppContainer
+    environment:
+      POSTGRES_DB: DockerDatabase
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres3996
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - coworking_network
+
+volumes:
+  postgres_data:
+
+networks:
+  coworking_network:
+
