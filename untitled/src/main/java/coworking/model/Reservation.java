@@ -24,7 +24,7 @@ public class Reservation implements Serializable {
 
     @ManyToOne
     @JoinColumn(name="user_id", nullable = false)
-    private User user;
+    private UserEntity user;
 
     @Column(name="start_date", nullable = false)
     private LocalDate start;
@@ -37,7 +37,7 @@ public class Reservation implements Serializable {
 
     public Reservation(){}
 
-    public Reservation(Workspace workspace, User user, LocalDate start, LocalDate end) {
+    public Reservation(Workspace workspace, UserEntity user, LocalDate start, LocalDate end) {
         this.workspace = workspace;
         this.user = user;
         this.start = start;
@@ -56,11 +56,11 @@ public class Reservation implements Serializable {
         this.workspace = newWorkspace;
     }
 
-    public User getUser() {
+    public UserEntity getUser() {
         return this.user;
     }
 
-    public void setUser(User newUser) {
+    public void setUser(UserEntity newUser) {
         this.user = newUser;
     }
 
