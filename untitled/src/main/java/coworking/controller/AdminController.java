@@ -1,5 +1,6 @@
 package coworking.controller;
 
+import coworking.dto.ReservationSubject;
 import coworking.model.Reservation;
 import coworking.model.Workspace;
 import coworking.repository.ReservationRepository;
@@ -7,7 +8,6 @@ import coworking.repository.UserEntityRepository;
 import coworking.repository.WorkspaceRepository;
 import coworking.service.ReservationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -25,14 +25,16 @@ public class AdminController {
     private final ReservationRepository reservationRepository;
     private final ReservationService reservationService;
     private final UserEntityRepository userEntityRepository;
+    private final ReservationSubject reservationSubject;
 
 
     @Autowired
-    public AdminController(WorkspaceRepository workspaceRepository, ReservationRepository reservationRepository, ReservationService reservationService, UserEntityRepository userEntityRepository) {
+    public AdminController(WorkspaceRepository workspaceRepository, ReservationRepository reservationRepository, ReservationService reservationService, UserEntityRepository userEntityRepository, ReservationSubject reservationSubject) {
         this.workspaceRepository = workspaceRepository;
         this.reservationRepository = reservationRepository;
         this.reservationService = reservationService;
         this.userEntityRepository = userEntityRepository;
+        this.reservationSubject = reservationSubject;
     }
 
     @GetMapping("/viewWorkspaces")
@@ -47,6 +49,7 @@ public class AdminController {
         return ResponseEntity.ok(savedWorkspace);
     }
 
+
     @PostMapping("/removeWorkspace")
     public ResponseEntity<?> removeCoworkingSpace(
             @RequestParam("id") int id) {
@@ -58,6 +61,12 @@ public class AdminController {
                     .body("No coworking space found with ID: " + id);
         }
 
+        List<Reservation> reservations = this.reservationRepository.findByWorkspace_Id(workspaceToBeRemoved.getId());
+
+        for (Reservation reservation : reservations) {
+            this.reservationSubject.notifyObservers(reservation.getId());
+            this.reservationRepository.delete(reservation);
+        }
         this.workspaceRepository.delete(workspaceToBeRemoved);
         return ResponseEntity.status(HttpStatus.OK)
                 .body("Coworking space with ID " + id + " removed successfully.");
@@ -86,6 +95,13 @@ public class AdminController {
         workspaceToBeUpdated.setType(type);
         workspaceToBeUpdated.setPrice(price);
         this.workspaceRepository.save(workspaceToBeUpdated);
+
+        for (Reservation reservation: this.reservationRepository.findAll()){
+            if(reservation.getWorkspace().getId() == workspaceToBeUpdated.getId()){
+                this.reservationSubject.notifyObserversOnChange(reservation.getId());
+            }
+        }
+
         return ResponseEntity.status(HttpStatus.OK)
                 .body("Coworking space with ID " + id + " updated successfully.");
     }

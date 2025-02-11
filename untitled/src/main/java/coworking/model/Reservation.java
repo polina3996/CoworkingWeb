@@ -1,6 +1,8 @@
 package coworking.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -18,7 +20,7 @@ public class Reservation implements Serializable {
     @Column(name="ID")
     private int id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="workspace_id", nullable = false)
     private Workspace workspace;
 
