@@ -1,5 +1,6 @@
 package coworking.service;
 
+import coworking.dto.ReservationSubject;
 import coworking.model.Reservation;
 import coworking.model.UserEntity;
 import coworking.model.Workspace;
@@ -18,14 +19,17 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final UserEntityRepository userEntityRepository;
     private final WorkspaceRepository workspaceRepository;
+    private final ReservationSubject reservationSubject;
+
 
     @Autowired
     public ReservationService(ReservationRepository reservationRepository,
                               UserEntityRepository userEntityRepository,
-                              WorkspaceRepository workspaceRepository) {
+                              WorkspaceRepository workspaceRepository, ReservationSubject reservationSubject) {
         this.reservationRepository = reservationRepository;
         this.userEntityRepository = userEntityRepository;
         this.workspaceRepository = workspaceRepository;
+        this.reservationSubject = reservationSubject;
     }
 
     public void makeReservation(Workspace workspaceToBeReserved, String name, LocalDate start, LocalDate end) {
@@ -39,6 +43,7 @@ public class ReservationService {
 
         this.reservationRepository.save(reservation);
         this.workspaceRepository.save(workspaceToBeReserved);
+        this.reservationSubject.addObserver(new UserObserver(user.getName()));
     }
 
 
@@ -48,5 +53,6 @@ public class ReservationService {
 
         this.reservationRepository.delete(reservationToBeRemoved);
         this.workspaceRepository.save(workspace);
+        this.reservationSubject.notifyObservers(reservationToBeRemoved.getId());
 }
 }

@@ -2,6 +2,7 @@ package coworking;
 
 import coworking.config.JwtUtil;
 import coworking.controller.AdminController;
+import coworking.dto.ReservationSubject;
 import coworking.model.Reservation;
 import coworking.model.Workspace;
 import coworking.repository.ReservationRepository;
@@ -22,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -40,6 +42,9 @@ public class AdminControllerTest {
 
     @MockitoBean
     private ReservationService reservationService;
+
+    @MockitoBean
+    private ReservationSubject reservationSubject;
 
     @MockitoBean
     private UserEntityRepository userEntityRepository;
@@ -88,13 +93,20 @@ public class AdminControllerTest {
     @Test
     public void givenWorkspace_whenRemoveWorkspace_thenWorkspaceDeleted() throws Exception {
         when(workspaceRepository.findById(1)).thenReturn(Optional.of(workspace));
+        when(reservationRepository.findByWorkspace_Id(1))
+                .thenReturn(Collections.singletonList(reservation));
+
 
         mockMvc.perform(post("/api/admin/removeWorkspace")
                         .param("id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Coworking space with ID 1 removed successfully."));
 
+        verify(reservationSubject, times(1)).notifyObservers(1);
+        verify(reservationRepository, times(1)).delete(reservation);
+
         verify(workspaceRepository, times(1)).delete(workspace);
+
     }
 
     @Test
@@ -110,6 +122,8 @@ public class AdminControllerTest {
     @Test
     public void givenWorkspace_whenUpdateWorkspace_thenWorkspaceUpdated() throws Exception {
         when(workspaceRepository.findById(1)).thenReturn(Optional.of(workspace));
+        when(reservationRepository.findAll())
+                .thenReturn(Collections.singletonList(reservation));
 
         mockMvc.perform(post("/api/admin/updateWorkspace")
                         .param("id", "1")
@@ -119,6 +133,7 @@ public class AdminControllerTest {
                 .andExpect(content().string("Coworking space with ID 1 updated successfully."));
 
         verify(workspaceRepository, times(1)).save(workspace);
+        verify(reservationSubject, times(1)).notifyObserversOnChange(1);
     }
 
     @Test
